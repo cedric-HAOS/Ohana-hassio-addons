@@ -1,0 +1,49 @@
+---
+name: teleinfo2mqtt Ohana
+image: ghcr.io/cedric-haos/teleinfo2mqtt-ohana
+version: 9.0.6-ohana.1
+slug: teleinfo2mqtt_ohana
+description: Téléinformation série vers MQTT et Ohana-Agent
+arch:
+  - armhf
+  - armv7
+  - aarch64
+  - amd64
+url: https://github.com/cedric-HAOS/hassio-addons/tree/main/teleinfo2mqtt
+udev: true
+uart: true
+init: false
+environment:
+  HASSIO_ADDON: "true"
+options:
+  EMIT_INTERVAL: 10
+  HASS_DISCOVERY_PREFIX: homeassistant
+  LOG_LEVEL: info
+  MQTT_BASE_TOPIC: teleinfo
+  MQTT_URL: mqtt://core-mosquitto:1883
+  MQTT_USER: ""
+  MQTT_PASSWORD: ""
+  SERIAL: /dev/ttyUSB0
+  TIC_MODE: history
+  TEMPO_ENABLED: false
+  OHANA_ENABLED: false
+  OHANA_URL: http://infra-01.ohana.lan:8770/v1/teleinformation/frames
+  OHANA_TOKEN: ""
+  OHANA_SOURCE: rpi-linky
+  OHANA_TIMEOUT_MS: 3000
+schema:
+  EMIT_INTERVAL: int(0,)
+  HASS_DISCOVERY_PREFIX: str
+  LOG_LEVEL: list(debug|info|error)
+  MQTT_BASE_TOPIC: str
+  MQTT_URL: str
+  MQTT_USER: str?
+  MQTT_PASSWORD: password?
+  SERIAL: str
+  TIC_MODE: list(history|standard)
+  TEMPO_ENABLED: bool
+  OHANA_ENABLED: bool
+  OHANA_URL: url
+  OHANA_TOKEN: password?
+  OHANA_SOURCE: str
+  OHANA_TIMEOUT_MS: int(100,30000)

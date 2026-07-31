@@ -1,0 +1,47 @@
+---
+configuration:
+  EMIT_INTERVAL:
+    name: Emission interval
+    description: Delay in seconds between two emitted frames. 0 emits every frame.
+  HASS_DISCOVERY_PREFIX:
+    name: Home Assistant Discovery prefix
+    description: MQTT prefix used for Home Assistant Discovery.
+  LOG_LEVEL:
+    name: Log level
+    description: Add-on logging verbosity.
+  MQTT_BASE_TOPIC:
+    name: MQTT base topic
+    description: Root MQTT topic used for teleinformation frames.
+  MQTT_URL:
+    name: MQTT broker URL
+    description: Address of the Mosquitto broker used by Home Assistant.
+  MQTT_USER:
+    name: MQTT user
+    description: MQTT user when broker authentication is enabled.
+  MQTT_PASSWORD:
+    name: MQTT password
+    description: MQTT broker password.
+  SERIAL:
+    name: Serial port
+    description: Serial device connected to the Linky meter.
+  TIC_MODE:
+    name: TIC mode
+    description: Historical or standard Linky teleinformation mode.
+  TEMPO_ENABLED:
+    name: Additional Tempo data
+    description: Enables additional Tempo information retrieval.
+  OHANA_ENABLED:
+    name: Direct Ohana-Agent output
+    description: Sends every decoded frame directly to INFRA-01 alongside MQTT.
+  OHANA_URL:
+    name: Ohana ingestion URL
+    description: Full URL of the Ohana-Agent teleinformation receiver.
+  OHANA_TOKEN:
+    name: Ohana ingestion token
+    description: Dedicated token matching the Teleinformation plugin configuration.
+  OHANA_SOURCE:
+    name: Source identifier
+    description: Stable source identifier, usually rpi-linky.
+  OHANA_TIMEOUT_MS:
+    name: Ohana HTTP timeout
+    description: Maximum Agent request time in milliseconds.

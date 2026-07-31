@@ -1,0 +1,47 @@
+---
+configuration:
+  EMIT_INTERVAL:
+    name: Intervalle d’émission
+    description: Intervalle en secondes entre deux trames publiées. 0 publie toutes les trames.
+  HASS_DISCOVERY_PREFIX:
+    name: Préfixe Discovery Home Assistant
+    description: Préfixe MQTT utilisé pour la découverte automatique Home Assistant.
+  LOG_LEVEL:
+    name: Niveau de journalisation
+    description: Niveau de détail des journaux de l’add-on.
+  MQTT_BASE_TOPIC:
+    name: Topic MQTT racine
+    description: Topic racine utilisé pour les trames Téléinformation.
+  MQTT_URL:
+    name: URL du broker MQTT
+    description: Adresse du broker Mosquitto utilisé par Home Assistant.
+  MQTT_USER:
+    name: Utilisateur MQTT
+    description: Utilisateur du broker MQTT, lorsque l’authentification est activée.
+  MQTT_PASSWORD:
+    name: Mot de passe MQTT
+    description: Mot de passe du broker MQTT.
+  SERIAL:
+    name: Port série
+    description: Périphérique série relié au compteur Linky.
+  TIC_MODE:
+    name: Mode TIC
+    description: Mode historique ou standard du compteur Linky.
+  TEMPO_ENABLED:
+    name: Données Tempo complémentaires
+    description: Active la récupération des informations Tempo complémentaires.
+  OHANA_ENABLED:
+    name: Envoi direct vers Ohana-Agent
+    description: Envoie chaque trame décodée directement vers INFRA-01 en parallèle de MQTT.
+  OHANA_URL:
+    name: URL d’ingestion Ohana
+    description: URL complète du récepteur Téléinformation d’Ohana-Agent.
+  OHANA_TOKEN:
+    name: Jeton d’ingestion Ohana
+    description: Jeton dédié identique à celui configuré dans le plugin Téléinformation.
+  OHANA_SOURCE:
+    name: Identifiant de source
+    description: Identifiant stable de la source, généralement rpi-linky.
+  OHANA_TIMEOUT_MS:
+    name: Délai HTTP Ohana
+    description: Délai maximal d’envoi vers Agent, en millisecondes.
