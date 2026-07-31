@@ -1,6 +1,6 @@
 {
   "name": "teleinfo2mqtt-ohana-app",
-  "version": "9.0.6-ohana.1",
+  "version": "9.0.6-ohana.2",
   "description": "Publish Linky teleinformation to MQTT and directly to Ohana-Agent",
   "main": "index.js",
   "scripts": {
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cedric-HAOS/hassio-addons.git"
+    "url": "git+https://github.com/cedric-HAOS/Ohana-hassio-addons.git"
   },
   "keywords": [
     "teleinfo",
@@ -19,9 +19,9 @@
   "author": "fmartinou",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/cedric-HAOS/hassio-addons/issues"
+    "url": "https://github.com/cedric-HAOS/Ohana-hassio-addons/issues"
   },
-  "homepage": "https://github.com/cedric-HAOS/hassio-addons/tree/main/teleinfo2mqtt",
+  "homepage": "https://github.com/cedric-HAOS/Ohana-hassio-addons/tree/main/teleinfo2mqtt",
   "dependencies": {
     "@serialport/parser-readline": "13.0.0",
     "async-mqtt": "2.6.3",

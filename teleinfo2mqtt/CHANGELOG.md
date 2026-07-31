@@ -1,5 +1,12 @@
 # Changelog
 
+## 9.0.6-ohana.2
+
+- Correction des mocks MQTT afin que la suite Jest valide le fork avant la
+  construction des images.
+- Alignement des métadonnées du paquet, de l'add-on et de l'image OCI sur le
+  dépôt `Ohana-hassio-addons`.
+
 ## 9.0.6-ohana.1
 
 - Ajout de la sortie HTTP directe vers Ohana-Agent.

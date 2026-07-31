@@ -13,7 +13,7 @@ RUN apk add --no-cache --virtual build_tools make gcc g++ python3 linux-headers 
     && apk del build_tools
 
 FROM base AS release
-ARG BUILD_VERSION=9.0.6-ohana.1
+ARG BUILD_VERSION=9.0.6-ohana.2
 ARG BUILD_ARCH
 LABEL io.hass.name="teleinfo2mqtt Ohana" \
       io.hass.description="Téléinformation Linky vers MQTT et Ohana-Agent" \
@@ -22,7 +22,7 @@ LABEL io.hass.name="teleinfo2mqtt Ohana" \
       io.hass.type="app" \
       org.opencontainers.image.title="teleinfo2mqtt Ohana" \
       org.opencontainers.image.version="${BUILD_VERSION}" \
-      org.opencontainers.image.source="https://github.com/cedric-HAOS/hassio-addons" \
+      org.opencontainers.image.source="https://github.com/cedric-HAOS/Ohana-hassio-addons" \
       org.opencontainers.image.licenses="MIT"
 COPY --from=dependencies /home/node/app/node_modules ./node_modules
 COPY Docker.entrypoint.sh /usr/bin/entrypoint.sh

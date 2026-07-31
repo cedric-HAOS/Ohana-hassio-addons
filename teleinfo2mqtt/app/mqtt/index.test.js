@@ -1,4 +1,3 @@
-const mqttAsync = require('async-mqtt');
 const HistoryTicMode = require('../teleinfo/history/HistoryTicMode');
 
 jest.mock('async-mqtt', () => ({
@@ -24,11 +23,11 @@ function mqttClient() {
 
 beforeEach(() => {
     jest.resetModules();
-    mqttAsync.connect.mockReset();
 });
 
 test('connect creates a reconnecting MQTT client', () => {
     const client = mqttClient();
+    const mqttAsync = require('async-mqtt');
     mqttAsync.connect.mockReturnValue(client);
     const mqtt = require('./index');
 
@@ -41,6 +40,7 @@ test('connect creates a reconnecting MQTT client', () => {
 
 test('publishFrame sends the decoded frame when MQTT is connected', async () => {
     const client = mqttClient();
+    const mqttAsync = require('async-mqtt');
     mqttAsync.connect.mockReturnValue(client);
     const mqtt = require('./index');
     mqtt.connect({});
@@ -56,6 +56,7 @@ test('publishFrame sends the decoded frame when MQTT is connected', async () => 
 test('publishFrame returns without failure while MQTT is unavailable', async () => {
     const client = mqttClient();
     client.connected = false;
+    const mqttAsync = require('async-mqtt');
     mqttAsync.connect.mockReturnValue(client);
     const mqtt = require('./index');
     mqtt.connect({});
