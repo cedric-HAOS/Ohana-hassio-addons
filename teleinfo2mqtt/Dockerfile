@@ -13,7 +13,7 @@ RUN apk add --no-cache --virtual build_tools make gcc g++ python3 linux-headers 
     && apk del build_tools
 
 FROM base AS release
-ARG BUILD_VERSION=9.0.6-ohana.2
+ARG BUILD_VERSION=9.0.6-ohana.3
 ARG BUILD_ARCH
 LABEL io.hass.name="teleinfo2mqtt Ohana" \
       io.hass.description="Téléinformation Linky vers MQTT et Ohana-Agent" \

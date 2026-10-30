@@ -1,5 +1,17 @@
 # Changelog
 
+## 9.0.6-ohana.3
+
+- Ajout d'un panneau « Linky » dans la barre latérale de Home Assistant
+  (Ingress, aucun port exposé) : état du port série, de la sortie Ohana-Agent
+  (INFRA-01) et de la sortie MQTT (HA-01), date et heure de la dernière
+  transmission réussie, dernier échec et sa cause, valeurs de la dernière
+  trame transmise.
+- Contrôles du panneau : pause et reprise de chaque sortie (valables jusqu'au
+  prochain redémarrage) et redémarrage de l'add-on par le Supervisor.
+- Dates du panneau en Europe/Paris.
+- Le message de reprise de la sortie Ohana indique la durée de la coupure.
+- Option interne PANEL_PORT (8099 par défaut) pour le port du panneau.
 ## 9.0.6-ohana.2
 
 - Correction des mocks MQTT afin que la suite Jest valide le fork avant la

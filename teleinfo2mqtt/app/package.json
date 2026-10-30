@@ -1,6 +1,6 @@
 {
   "name": "teleinfo2mqtt-ohana-app",
-  "version": "9.0.6-ohana.2",
+  "version": "9.0.6-ohana.3",
   "description": "Publish Linky teleinformation to MQTT and directly to Ohana-Agent",
   "main": "index.js",
   "scripts": {

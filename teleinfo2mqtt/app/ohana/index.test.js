@@ -8,6 +8,8 @@ jest.mock('../config', () => ({
 }));
 
 const axios = require('axios');
+const log = require('../log');
+const status = require('../status');
 const { publishFrame, resetForTests } = require('./index');
 
 const frame = {
@@ -64,4 +66,45 @@ test('drops a concurrent frame instead of building an HTTP backlog', async () =>
     expect(axios.post).toHaveBeenCalledTimes(1);
     resolveRequest({ status: 202 });
     await first;
+});
+
+test('records each transmission and the outage duration in the panel status', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-10-30T08:17:30Z'));
+    status.configureOutput('ohana', { enabled: true, target: 'http://infra-01.ohana.lan:8770/v1/teleinformation/frames' });
+    const info = jest.spyOn(log, 'info').mockImplementation(() => {});
+    const warn = jest.spyOn(log, 'warn').mockImplementation(() => {});
+    try {
+        axios.post.mockRejectedValueOnce(new Error('connect ECONNREFUSED'));
+        await publishFrame({ frame, teleinfoService });
+        expect(status.snapshot().outputs.ohana).toMatchObject({
+            state: 'failing',
+            lastError: 'connect ECONNREFUSED',
+        });
+
+        jest.setSystemTime(new Date('2026-10-30T08:17:56Z'));
+        axios.post.mockResolvedValue({ status: 202 });
+        await publishFrame({ frame, teleinfoService });
+
+        expect(status.snapshot().outputs.ohana).toMatchObject({
+            state: 'ok',
+            successes: 1,
+            lastOutageSeconds: 26,
+            lastFrame: expect.objectContaining({ SINSTS: '01392' }),
+        });
+        expect(info).toHaveBeenCalledWith(expect.stringContaining('restored after 26 s'));
+        expect(warn).toHaveBeenCalledTimes(1);
+    } finally {
+        info.mockRestore();
+        warn.mockRestore();
+        jest.useRealTimers();
+    }
+});
+
+test('does not send while the Ohana output is paused from the panel', async () => {
+    status.setPaused('ohana', true);
+
+    await publishFrame({ frame, teleinfoService });
+
+    expect(axios.post).not.toHaveBeenCalled();
 });

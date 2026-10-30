@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="__BASE__">
+<title>Linky · teleinfo2mqtt</title>
+<style>
+:root {
+    --bg: #f4f5f7;
+    --card: #ffffff;
+    --text: #1d2330;
+    --muted: #667085;
+    --line: #e3e6ec;
+    --ok: #1a7f4b;
+    --ok-bg: #e3f4ea;
+    --warn: #9a6700;
+    --warn-bg: #fff3cd;
+    --bad: #b42318;
+    --bad-bg: #fde4e1;
+    --idle: #475467;
+    --idle-bg: #eaecf0;
+    --accent: #2457d6;
+}
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #14171f;
+        --card: #1d222d;
+        --text: #e6e9f0;
+        --muted: #98a2b3;
+        --line: #2c3342;
+        --ok: #5fd08f;
+        --ok-bg: #173a29;
+        --warn: #f0c04a;
+        --warn-bg: #3d3112;
+        --bad: #ff8a80;
+        --bad-bg: #44201d;
+        --idle: #b6bfce;
+        --idle-bg: #2a3040;
+        --accent: #7aa2ff;
+    }
+}
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    padding: 16px;
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+main { max-width: 1100px; margin: 0 auto; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; margin-bottom: 14px; }
+h1 { font-size: 20px; margin: 0; }
+.sub { color: var(--muted); }
+.grow { flex: 1; }
+.grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.card h2 { font-size: 15px; margin: 0 0 2px; display: flex; align-items: center; gap: 8px; }
+.card .target { color: var(--muted); font-size: 12px; margin-bottom: 8px; overflow-wrap: anywhere; }
+.pill { font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--idle-bg); color: var(--idle); white-space: nowrap; }
+.pill.ok { background: var(--ok-bg); color: var(--ok); }
+.pill.warn { background: var(--warn-bg); color: var(--warn); }
+.pill.bad { background: var(--bad-bg); color: var(--bad); }
+dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; }
+dt { color: var(--muted); }
+dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+dd small { color: var(--muted); }
+dd.date { white-space: nowrap; }
+.full { grid-column: 1 / -1; text-align: left; }
+.error { color: var(--bad); }
+.actions { margin-top: 10px; display: flex; gap: 8px; }
+button {
+    font: inherit; cursor: pointer; padding: 5px 12px; border-radius: 7px;
+    border: 1px solid var(--line); background: var(--card); color: var(--text);
+}
+button:hover { border-color: var(--accent); color: var(--accent); }
+button.danger:hover { border-color: var(--bad); color: var(--bad); }
+button:disabled { opacity: .5; cursor: default; }
+section { margin-top: 12px; }
+.values { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-top: 10px; }
+.value { background: var(--bg); border-radius: 8px; padding: 8px 10px; }
+.value .label { color: var(--muted); font-size: 12px; }
+.value .number { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.value .unit { font-size: 12px; color: var(--muted); margin-left: 3px; font-weight: 400; }
+details { margin-top: 12px; }
+summary { cursor: pointer; color: var(--accent); }
+table { border-collapse: collapse; width: 100%; margin-top: 6px; font-variant-numeric: tabular-nums; }
+td { padding: 3px 8px; border-top: 1px solid var(--line); }
+td:first-child { color: var(--muted); width: 40%; }
+footer { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; color: var(--muted); font-size: 12px; }
+#message { color: var(--bad); }
+</style>
+</head>
+<body>
+<main>
+    <header>
+        <h1>Linky · teleinfo2mqtt</h1>
+        <span class="sub" id="subtitle">Chargement…</span>
+        <span class="grow"></span>
+        <span class="sub" id="refreshed"></span>
+    </header>
+    <div class="grid" id="cards"></div>
+    <section class="card" id="values-card"></section>
+    <footer>
+        <button class="danger" id="restart" type="button">Redémarrer l’add-on</button>
+        <span>Une pause reste active jusqu’au prochain redémarrage de l’add-on.</span>
+        <span id="message"></span>
+    </footer>
+</main>
+<script>
+(function () {
+    'use strict';
+
+    var STATE_LABELS = {
+        ok: ['OK', 'ok'],
+        waiting: ['En attente', 'warn'],
+        failing: ['En échec', 'bad'],
+        paused: ['En pause', 'warn'],
+        disabled: ['Désactivée', '']
+    };
+    var OUTPUT_TITLES = {
+        ohana: 'INFRA-01 · Ohana-Agent',
+        mqtt: 'HA-01 · broker MQTT'
+    };
+    var KEY_VALUES = [
+        ['SINSTS', 'Puissance apparente', 'VA'],
+        ['PAPP', 'Puissance apparente', 'VA'],
+        ['LTARF', 'Tarif en cours', ''],
+        ['PTEC', 'Période tarifaire', ''],
+        ['IRMS1', 'Intensité', 'A'],
+        ['IINST', 'Intensité', 'A'],
+        ['URMS1', 'Tension', 'V'],
+        ['EAST', 'Énergie soutirée', 'Wh'],
+        ['BASE', 'Index base', 'Wh'],
+        ['HCHC', 'Index heures creuses', 'Wh'],
+        ['HCHP', 'Index heures pleines', 'Wh'],
+        ['EASF01', 'Index 1', 'Wh'],
+        ['EASF02', 'Index 2', 'Wh']
+    ];
+
+    function el(tag, className, text) {
+        var node = document.createElement(tag);
+        if (className) { node.className = className; }
+        if (text !== undefined && text !== null) { node.textContent = text; }
+        return node;
+    }
+
+    function formatDate(iso) {
+        // The server sends Europe/Paris ISO strings: show them as they are.
+        if (!iso) { return '—'; }
+        return iso.slice(8, 10) + '/' + iso.slice(5, 7) + '/' + iso.slice(0, 4) + ' ' + iso.slice(11, 19);
+    }
+
+    function formatAge(seconds) {
+        if (seconds === null || seconds === undefined) { return ''; }
+        if (seconds < 90) { return 'il y a ' + seconds + ' s'; }
+        if (seconds < 5400) { return 'il y a ' + Math.round(seconds / 60) + ' min'; }
+        if (seconds < 172800) { return 'il y a ' + Math.round(seconds / 3600) + ' h'; }
+        return 'il y a ' + Math.round(seconds / 86400) + ' j';
+    }
+
+    function formatDuration(seconds) {
+        if (seconds < 90) { return seconds + ' s'; }
+        if (seconds < 5400) { return Math.round(seconds / 60) + ' min'; }
+        if (seconds < 172800) { return Math.round(seconds / 3600) + ' h'; }
+        return Math.round(seconds / 86400) + ' j';
+    }
+
+    function formatValue(raw) {
+        var text = raw.trim().replace(/\s+/g, ' ');
+        return /^\d+$/.test(text) ? String(Number(text)) : text;
+    }
+
+    function row(list, label, value, ageSeconds, className) {
+        var full = className && className.indexOf('full') !== -1;
+        list.appendChild(el('dt', full ? 'full' : null, label));
+        var dd = el('dd', className, value);
+        if (/^\d\d\/\d\d\/\d{4} /.test(value)) { dd.className += ' date'; }
+        if (ageSeconds !== null && ageSeconds !== undefined) {
+            dd.appendChild(document.createElement('br'));
+            dd.appendChild(el('small', null, formatAge(ageSeconds)));
+        }
+        list.appendChild(dd);
+    }
+
+    function pill(stateKey) {
+        var entry = STATE_LABELS[stateKey] || [stateKey, ''];
+        return el('span', 'pill ' + entry[1], entry[0]);
+    }
+
+    function renderSerial(data) {
+        var card = el('div', 'card');
+        var title = el('h2', null, 'Port série · Linky');
+        var stale = data.serial.lastFrameAgeSeconds === null || data.serial.lastFrameAgeSeconds > 60;
+        title.appendChild(pill(data.serial.lastFrameAt ? (stale ? 'failing' : 'ok') : 'waiting'));
+        card.appendChild(title);
+        card.appendChild(el('div', 'target', data.info.serial ? data.info.serial + ' · mode ' + data.info.ticMode : ''));
+        var list = el('dl');
+        row(list, 'Dernière trame lue', formatDate(data.serial.lastFrameAt), data.serial.lastFrameAgeSeconds);
+        row(list, 'Trames lues', String(data.serial.framesRead));
+        row(list, 'Intervalle d’émission', data.info.emitInterval === undefined ? '—' : data.info.emitInterval + ' s');
+        row(list, 'Add-on démarré', formatDate(data.startedAt), data.uptimeSeconds);
+        card.appendChild(list);
+        return card;
+    }
+
+    function renderOutput(name, out) {
+        var card = el('div', 'card');
+        var title = el('h2', null, OUTPUT_TITLES[name]);
+        title.appendChild(pill(out.state));
+        card.appendChild(title);
+        card.appendChild(el('div', 'target', out.target || 'Non configurée'));
+        var list = el('dl');
+        row(list, name === 'mqtt' ? 'Dernière publication acceptée' : 'Dernière transmission réussie',
+            formatDate(out.lastSuccessAt), out.lastSuccessAgeSeconds);
+        if (name === 'mqtt' && out.connected !== null) {
+            row(list, 'Connexion au broker', out.connected ? 'Connecté' : 'Déconnecté', null, out.connected ? '' : 'error');
+        }
+        if (out.consecutiveFailures > 0) {
+            row(list, 'Échecs consécutifs', String(out.consecutiveFailures), null, 'error');
+            row(list, 'En échec depuis', formatDate(out.failingSinceAt));
+        }
+        row(list, 'Dernier échec', formatDate(out.lastFailureAt), out.lastFailureAgeSeconds);
+        if (out.lastError) {
+            row(list, 'Cause', out.lastError, null, out.consecutiveFailures > 0 ? 'full error' : 'full');
+        }
+        if (out.lastOutageSeconds !== null) {
+            row(list, 'Dernière coupure', formatDuration(out.lastOutageSeconds));
+        }
+        row(list, 'Envois réussis', String(out.successes));
+        row(list, 'Envois en échec', String(out.failures));
+        card.appendChild(list);
+        if (out.enabled) {
+            var actions = el('div', 'actions');
+            var button = el('button', null, out.paused ? 'Reprendre l’envoi' : 'Mettre en pause');
+            button.type = 'button';
+            button.addEventListener('click', function () {
+                post('api/outputs/' + name + '/' + (out.paused ? 'resume' : 'pause'), button);
+            });
+            actions.appendChild(button);
+            card.appendChild(actions);
+        }
+        return card;
+    }
+
+    function renderValues(data) {
+        var card = document.getElementById('values-card');
+        card.textContent = '';
+        var ohana = data.outputs.ohana;
+        var mqtt = data.outputs.mqtt;
+        var source = null;
+        var caption = '';
+        var candidates = [['ohana', ohana], ['mqtt', mqtt]].filter(function (entry) {
+            return entry[1].lastFrame && entry[1].lastSuccessAgeSeconds !== null;
+        }).sort(function (a, b) { return a[1].lastSuccessAgeSeconds - b[1].lastSuccessAgeSeconds; });
+        if (candidates.length > 0) {
+            source = candidates[0][1].lastFrame;
+            caption = 'Transmise à ' + OUTPUT_TITLES[candidates[0][0]] + ' le '
+                + formatDate(candidates[0][1].lastSuccessAt);
+        } else if (data.serial.lastFrame) {
+            source = data.serial.lastFrame;
+            caption = 'Lue sur le port série le ' + formatDate(data.serial.lastFrameAt) + ' · pas encore transmise';
+        }
+        card.appendChild(el('h2', null, 'Valeurs de la dernière trame'));
+        if (!source) {
+            card.appendChild(el('div', 'target', 'Aucune trame reçue depuis le démarrage.'));
+            return;
+        }
+        card.appendChild(el('div', 'target', caption));
+
+        var grid = el('div', 'values');
+        var shown = {};
+        KEY_VALUES.forEach(function (entry) {
+            var label = entry[0];
+            if (source[label] === undefined || (entry[1] === 'Puissance apparente' && shown.power)
+                || (entry[1] === 'Intensité' && shown.current)) { return; }
+            if (entry[1] === 'Puissance apparente') { shown.power = true; }
+            if (entry[1] === 'Intensité') { shown.current = true; }
+            var box = el('div', 'value');
+            box.appendChild(el('div', 'label', entry[1] + ' · ' + label));
+            var number = el('div', 'number', formatValue(source[label]));
+            if (entry[2]) { number.appendChild(el('span', 'unit', entry[2])); }
+            box.appendChild(number);
+            grid.appendChild(box);
+        });
+        card.appendChild(grid);
+
+        var details = el('details');
+        details.appendChild(el('summary', null, 'Toutes les étiquettes (' + Object.keys(source).length + ')'));
+        var table = el('table');
+        Object.keys(source).sort().forEach(function (label) {
+            var tr = el('tr');
+            tr.appendChild(el('td', null, label));
+            tr.appendChild(el('td', null, source[label]));
+            table.appendChild(tr);
+        });
+        details.appendChild(table);
+        card.appendChild(details);
+        if (window.__detailsOpen) { details.open = true; }
+        details.addEventListener('toggle', function () { window.__detailsOpen = details.open; });
+    }
+
+    function render(data) {
+        document.getElementById('subtitle').textContent = 'v' + (data.info.version || '?')
+            + (data.info.meterId ? ' · compteur ' + data.info.meterId : '');
+        document.getElementById('refreshed').textContent = 'Actualisé à ' + formatDate(data.generatedAt).slice(11);
+        var cards = document.getElementById('cards');
+        cards.textContent = '';
+        cards.appendChild(renderSerial(data));
+        cards.appendChild(renderOutput('ohana', data.outputs.ohana));
+        cards.appendChild(renderOutput('mqtt', data.outputs.mqtt));
+        renderValues(data);
+    }
+
+    function setMessage(text) { document.getElementById('message').textContent = text || ''; }
+
+    function load() {
+        fetch('api/status', { cache: 'no-store' })
+            .then(function (response) { return response.json(); })
+            .then(function (data) { setMessage(''); render(data); })
+            .catch(function () { setMessage('Add-on injoignable'); });
+    }
+
+    function post(url, button) {
+        if (button) { button.disabled = true; }
+        return fetch(url, { method: 'POST', headers: { 'X-Requested-With': 'ohana-panel' } })
+            .then(function (response) {
+                return response.json().then(function (body) {
+                    if (!response.ok) { throw new Error(body.error || response.status); }
+                    return body;
+                });
+            })
+            .then(function () { setMessage(''); load(); return true; })
+            .catch(function (error) {
+                setMessage('Action refusée : ' + error.message);
+                if (button) { button.disabled = false; }
+                return false;
+            });
+    }
+
+    document.getElementById('restart').addEventListener('click', function () {
+        if (!window.confirm('Redémarrer l’add-on teleinfo2mqtt ? La lecture est interrompue quelques secondes.')) { return; }
+        var button = document.getElementById('restart');
+        post('api/restart', button).then(function (accepted) {
+            if (!accepted) { return; }
+            setMessage('Redémarrage demandé…');
+            setTimeout(function () { button.disabled = false; setMessage(''); }, 20000);
+        });
+    });
+
+    load();
+    setInterval(load, 5000);
+}());
+</script>
+</body>
+</html>

@@ -66,3 +66,52 @@ test('publishFrame returns without failure while MQTT is unavailable', async () 
     ).resolves.toBeUndefined();
     expect(client.publish).not.toHaveBeenCalled();
 });
+
+test('publishFrame records the transmission in the panel status', async () => {
+    const client = mqttClient();
+    const mqttAsync = require('async-mqtt');
+    mqttAsync.connect.mockReturnValue(client);
+    const mqtt = require('./index');
+    const status = require('../status');
+    mqtt.connect({});
+
+    await mqtt.publishFrame({ frame: sample, teleinfoService: new HistoryTicMode() });
+
+    expect(status.snapshot().outputs.mqtt).toMatchObject({
+        state: 'ok',
+        successes: 1,
+        lastFrame: expect.objectContaining({ PAPP: '00720' }),
+    });
+});
+
+test('publishFrame records an unavailable broker as a failure', async () => {
+    const client = mqttClient();
+    client.connected = false;
+    const mqttAsync = require('async-mqtt');
+    mqttAsync.connect.mockReturnValue(client);
+    const mqtt = require('./index');
+    const status = require('../status');
+    mqtt.connect({});
+
+    await mqtt.publishFrame({ frame: sample, teleinfoService: new HistoryTicMode() });
+
+    expect(status.snapshot().outputs.mqtt).toMatchObject({
+        state: 'failing',
+        lastError: 'MQTT broker unavailable',
+    });
+});
+
+test('publishFrame sends nothing while the MQTT output is paused', async () => {
+    const client = mqttClient();
+    const mqttAsync = require('async-mqtt');
+    mqttAsync.connect.mockReturnValue(client);
+    const mqtt = require('./index');
+    const status = require('../status');
+    mqtt.connect({});
+    status.setPaused('mqtt', true);
+
+    await mqtt.publishFrame({ frame: sample, teleinfoService: new HistoryTicMode() });
+
+    expect(client.publish).not.toHaveBeenCalled();
+    expect(status.snapshot().outputs.mqtt.attempts).toBe(0);
+});

@@ -1,5 +1,6 @@
 const axios = require('axios');
 const log = require('../log');
+const status = require('../status');
 const {
     ohanaEnabled,
     ohanaUrl,
@@ -16,7 +17,7 @@ let requestInFlight = false;
  * HTTP failures never interrupt serial reading or the MQTT output.
  */
 async function publishFrame({ frame, teleinfoService }) {
-    if (!ohanaEnabled || requestInFlight) {
+    if (!ohanaEnabled || requestInFlight || status.isPaused('ohana')) {
         return;
     }
 
@@ -29,6 +30,7 @@ async function publishFrame({ frame, teleinfoService }) {
     }
 
     requestInFlight = true;
+    status.recordAttempt('ohana');
     try {
         await axios.post(
             ohanaUrl,
@@ -46,12 +48,15 @@ async function publishFrame({ frame, teleinfoService }) {
                 },
             },
         );
+        const outageSeconds = status.recordSuccess('ohana', frame);
         if (lastErrorMessage) {
-            log.info(`Ohana-Agent ingestion restored [${ohanaUrl}]`);
+            const duration = outageSeconds === undefined ? '' : ` after ${outageSeconds} s`;
+            log.info(`Ohana-Agent ingestion restored${duration} [${ohanaUrl}]`);
             lastErrorMessage = undefined;
         }
     } catch (error) {
         const message = error.message || String(error);
+        status.recordFailure('ohana', message);
         if (message !== lastErrorMessage) {
             log.warn(`Unable to publish frame to Ohana-Agent [${ohanaUrl}] (${message})`);
             lastErrorMessage = message;
@@ -62,6 +67,7 @@ async function publishFrame({ frame, teleinfoService }) {
 }
 
 function connect({ teleinfoService }) {
+    status.configureOutput('ohana', { enabled: ohanaEnabled, target: ohanaUrl });
     if (!ohanaEnabled) {
         log.info('Ohana direct output disabled');
         return;
@@ -80,6 +86,7 @@ function connect({ teleinfoService }) {
 function resetForTests() {
     lastErrorMessage = undefined;
     requestInFlight = false;
+    status.reset();
 }
 
 module.exports = { connect, publishFrame, resetForTests };

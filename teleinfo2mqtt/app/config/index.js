@@ -22,6 +22,7 @@ const config = {
     ohanaToken: undefined,
     ohanaSource: 'rpi-linky',
     ohanaTimeoutMs: 3000,
+    panelPort: 8099,
     serial: '/dev/ttyUSB0',
     tempoEnabled: false,
     tempoIntervalMinute: 5,
@@ -47,6 +48,9 @@ function overrideConfiguration(overrideObject) {
     }
     if (overrideObject.OHANA_TIMEOUT_MS) {
         config.ohanaTimeoutMs = Number(overrideObject.OHANA_TIMEOUT_MS);
+    }
+    if (overrideObject.PANEL_PORT) {
+        config.panelPort = Number(overrideObject.PANEL_PORT);
     }
     if (overrideObject.SERIAL) {
         config.serial = overrideObject.SERIAL;

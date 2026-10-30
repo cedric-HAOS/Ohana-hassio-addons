@@ -1,7 +1,7 @@
 ---
 name: teleinfo2mqtt Ohana
 image: ghcr.io/cedric-haos/teleinfo2mqtt-ohana
-version: 9.0.6-ohana.2
+version: 9.0.6-ohana.3
 slug: teleinfo2mqtt_ohana
 description: Téléinformation série vers MQTT et Ohana-Agent
 arch:
@@ -13,6 +13,10 @@ url: https://github.com/cedric-HAOS/Ohana-hassio-addons/tree/main/teleinfo2mqtt
 udev: true
 uart: true
 init: false
+ingress: true
+ingress_port: 8099
+panel_icon: mdi:flash
+panel_title: Linky
 environment:
   HASSIO_ADDON: "true"
 options:

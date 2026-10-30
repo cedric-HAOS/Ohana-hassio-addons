@@ -14,6 +14,26 @@ Le fork n’exige aucun broker MQTT local sur RPI-Linky : `MQTT_URL` peut
 continuer à pointer vers Mosquitto sur HA-Green. Le processus reste actif si ce
 broker est indisponible et poursuit l’envoi direct vers Ohana-Agent.
 
+## Panneau Home Assistant
+
+L'add-on ajoute l'entrée « Linky » dans la barre latérale de Home Assistant
+(Ingress : aucun port n'est exposé sur le réseau). Elle affiche :
+
+- le port série et la dernière trame lue ;
+- pour chaque sortie (INFRA-01 Ohana-Agent, HA-01 broker MQTT) : état, date et
+  heure de la dernière transmission réussie, dernier échec avec sa cause,
+  nombre d'échecs consécutifs, durée de la dernière coupure ;
+- les valeurs de la dernière trame transmise (puissance, tarif, intensité,
+  index) et toutes les étiquettes.
+
+Pour HA-01, la date est celle de l'acceptation par le broker MQTT : elle ne
+prouve pas que Home Assistant a traité la valeur.
+
+Le panneau permet de mettre en pause chaque sortie (jusqu'au prochain
+redémarrage de l'add-on) et de redémarrer l'add-on par le Supervisor. Les
+dates sont en Europe/Paris. L'état est conservé en mémoire : il repart de zéro
+à chaque démarrage.
+
 ## Configuration Ohana
 
 Configurer d’abord le plugin Téléinformation dans Vision, puis reporter le même

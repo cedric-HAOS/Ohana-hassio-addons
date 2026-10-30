@@ -1,6 +1,7 @@
 const fs = require('fs');
 const mqtt = require('async-mqtt');
 const log = require('../log');
+const status = require('../status');
 const {
     mqttUrl,
     mqttUser,
@@ -46,13 +47,18 @@ async function publishHealthCheck() {
 }
 
 async function publishFrame({ frame, teleinfoService }) {
+    if (status.isPaused('mqtt')) {
+        return;
+    }
     const idLabel = teleinfoService.getIdLabel(frame);
     const id = frame[idLabel] ? frame[idLabel].raw : undefined;
     if (!id) {
         log.warn('Cannot publish a frame without unique id property');
         return;
     }
+    status.recordAttempt('mqtt');
     if (!client || !client.connected) {
+        status.recordFailure('mqtt', 'MQTT broker unavailable');
         if (!unavailableLogged) {
             log.warn(`MQTT broker unavailable [${mqttUrl}]; frames continue toward Ohana-Agent`);
             unavailableLogged = true;
@@ -72,8 +78,10 @@ async function publishFrame({ frame, teleinfoService }) {
     const frameTopic = getFrameTopic(id);
     try {
         await client.publish(frameTopic, JSON.stringify(frame));
+        status.recordSuccess('mqtt', frame);
         await publishHealthCheck();
     } catch (error) {
+        status.recordFailure('mqtt', error.message);
         log.warn(`Unable to publish frame to ${frameTopic} (${error.message})`);
     }
 }
@@ -101,13 +109,16 @@ function connect({ teleinfoService, tempoService }) {
     if (mqttTlsRejectUnauthorized !== '') options.rejectUnauthorized = mqttTlsRejectUnauthorized;
 
     log.info(`Connecting to MQTT broker [${mqttUrl}]`);
+    status.configureOutput('mqtt', { enabled: true, target: mqttUrl });
     client = mqtt.connect(mqttUrl, options);
     client.on('connect', () => {
+        status.setConnected('mqtt', true);
         unavailableLogged = false;
         log.info(`Connected to MQTT broker [${mqttUrl}]`);
         // eslint-disable-next-line no-underscore-dangle
         client._client.options.properties = {};
     });
+    client.on('close', () => status.setConnected('mqtt', false));
     client.on('reconnect', () => log.info('Reconnecting to the MQTT broker...'));
     client.on('error', (error) => log.warn(`MQTT connection error (${error.message})`));
 

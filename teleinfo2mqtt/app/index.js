@@ -3,7 +3,10 @@ const teleinfo = require('./teleinfo');
 const Tempo = require('./tempo/Tempo');
 const mqtt = require('./mqtt');
 const ohana = require('./ohana');
+const panel = require('./panel');
+const status = require('./status');
 const log = require('./log');
+const { version } = require('./package.json');
 
 function startOutput(name, connect) {
     try {
@@ -32,6 +35,20 @@ async function run() {
         return;
     }
 
+    status.setInfo({
+        version,
+        ticMode: config.ticMode,
+        serial: config.serial,
+        emitInterval: config.emitInterval,
+    });
+    teleinfoService.onFrame((frame) => {
+        status.recordFrame(frame);
+        const idLabel = teleinfoService.getIdLabel(frame);
+        if (frame[idLabel]) {
+            status.setInfo({ meterId: frame[idLabel].raw });
+        }
+    });
+
     let tempoService;
     if (config.tempoEnabled) {
         tempoService = new Tempo({
@@ -42,6 +59,7 @@ async function run() {
     // Both outputs subscribe independently to decoded serial frames.
     startOutput('MQTT', () => mqtt.connect({ teleinfoService, tempoService }));
     startOutput('Ohana', () => ohana.connect({ teleinfoService }));
+    startOutput('Panel', () => panel.start({ port: config.panelPort }));
 }
 
 run();
